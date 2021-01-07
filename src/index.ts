@@ -1,59 +1,58 @@
+import { ParseResult, parse } from './helpers/argparser'
+
 import { Client } from 'discord.js'
+import DAO from './database/dao'
+import UserRepository from './database/user'
+import { argv } from 'process'
 import commands from './loader'
 
 require('dotenv').config({path: __dirname + '/../.env'})
 
-const client = new Client()
-console.log(commands)
-
-client.once('ready', () => {
-    console.log('To vivo irmão')
-})
-
-client.on('message', (message) => {
-    // Caso a mensagem recebida não comece com o prefix ou tenha sido enviada pelo bot
-    // não tem como ser um comando. 
-    if (!message.content.startsWith(process.env.PREFIX as string) || message.author.bot) return;
-
-    // Quebra a mensagem (removendo o prefixo) em palavras
-    const words = message.content.slice(process.env.PREFIX?.length).trim().split(/ +/);
+async function main() {
+    const client = new Client();
     
-    // Extrai dos argumentos o nome do comando
-    const commandName = words.shift()?.toLowerCase();
-    const command = commands.get(commandName as string)
+    const database = new DAO(process.env.DB_URL!)
+    await database.init()
 
-    // Caso o comando não esteja registrado retorna
-    if (command === undefined) return
-
-    // Trata parâmetros com aspas. Para passar um parâmetro com espaço no meio é necessário
-    // fazer "parametro legal".
-    let argv = []
-    let args = words.join(' ')
-    const ticked = args.match(/\"(.*?)\"/g)
-
-    if (ticked !== null) {
-        for (const word of ticked) {
-            argv.push(word.toString().substr(1, word.length - 2))
-            args = args.replace(word.toString().substr(1, word.length - 2), '')
-        }
-    }
-
-    argv = argv.concat(args.split(/ +/))
-    argv = argv.filter(el => el !== '""')
-
-    // Caso o comando tenha a mesma quantidade de argumentos necessários
-    // que a string recebida, tenta executar
-    if (command?.argc === argv.length) {
-        try {
-            command.callback(message, argv)
-        } catch (error) {
-            console.error("Ehhh, não sei o que rolou não, olha o log (mentira não tem log)")
-            message.reply("Ta pegando fogo bicho")
-        }
-    } else {
-        message.reply("Amigão, faltou argumento ai. \n" + command?.usage as string)
-    }
+    client.once('ready', async () => {
+        console.log('To vivo irmão')
+    })
     
-})
+    client.on('message', async (message) => {
+        // Caso a mensagem recebida não comece com o prefix ou tenha sido enviada pelo bot
+        // não tem como ser um comando. 
+        if (!message.content.startsWith(process.env.PREFIX as string) || message.author.bot) return;
 
-client.login(process.env.TOKEN)
+        const result: ParseResult = parse(message)
+        const command = commands.get(result.command)
+
+        if (command === undefined) return
+        
+        if (command.hasRegisterParam && result.argv.length === 0) {
+            const userRepository = new UserRepository(database)
+            const user = await userRepository.get(message.author.id)
+            
+            if (user !== undefined) {
+                result.argv.push(user.riot_user)
+            }
+        }
+        
+        // Caso o comando tenha a mesma quantidade de argumentos necessários
+        // que a string recebida, tenta executar
+        if (command?.argc === result.argv.length) {
+            try {
+                command.callback(message, result.argv, database)
+            } catch (error) {
+                console.error("Ehhh, não sei o que rolou não, olha o log (mentira não tem log)")
+                message.reply("Ta pegando fogo bicho")
+            }
+        } else {
+            message.reply("Amigão, ta errado ai amigo. \n" + command?.usage as string)
+        }
+        
+    })
+    
+    client.login(process.env.DISCORD_TOKEN)
+}
+
+main()

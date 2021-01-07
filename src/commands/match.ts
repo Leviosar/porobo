@@ -1,7 +1,8 @@
-import { ApiResponseDTO, MatchListingDto, SummonerLeagueDto, SummonerV4DTO } from 'twisted/dist/models-dto';
+import { ApiResponseDTO, CurrentGameInfoDTO, SpectatorNotAvailableDTO, SummonerV4DTO } from 'twisted/dist/models-dto'
 import { Constants, LolApi } from 'twisted'
 
-import BaseCommand from '../models/BaseCommand'
+import ActiveGamePresenter from '../presenters/ActiveGamePresenter'
+import BaseCommand from './base'
 import { Message } from 'discord.js'
 
 const match: BaseCommand = {
@@ -17,17 +18,23 @@ const match: BaseCommand = {
             Constants.Regions.BRAZIL
         ) as ApiResponseDTO<SummonerV4DTO>
 
-        const matches = await api.Match.list(
-            user.response.accountId,
-            Constants.Regions.BRAZIL
-        ) as ApiResponseDTO<MatchListingDto>
-        console.log(matches)
-        message.channel.send("Grande p caralho")
+        const match = await api.Spectator.activeGame(
+            user.response.id,
+            Constants.Regions.BRAZIL,
+        ) as SpectatorNotAvailableDTO | ApiResponseDTO<CurrentGameInfoDTO>
+        
+        if (Object.keys(match).includes('message')) {
+            message.channel.send('O invocador não está em nenhuma partida ativa')
+        } else {
+            const activeMatch: CurrentGameInfoDTO = (match as ApiResponseDTO<CurrentGameInfoDTO>).response 
+            message.channel.send(new ActiveGamePresenter(user.response, activeMatch).show())
+        }
     },
     name: 'match',
     help: 'Shows summoner\'s current match',
     usage: '!match username',
     argc: 1,
+    hasRegisterParam: true
 }
 
 export default match

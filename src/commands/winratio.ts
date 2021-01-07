@@ -1,5 +1,5 @@
-import BaseCommand from "../models/BaseCommand";
-import { Message } from "discord.js";
+import BaseCommand from './base';
+import { Message } from 'discord.js';
 
 const winratio: BaseCommand = {
     callback: (message: Message, argv: Array<string>) => {
@@ -10,6 +10,7 @@ const winratio: BaseCommand = {
     help: 'Shows winratio',
     usage: '!winrate username',
     argc: 1,
+    hasRegisterParam: true
 }
 
 export default winratio

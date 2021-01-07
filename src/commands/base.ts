@@ -4,4 +4,5 @@ export default interface BaseCommand {
     help: string;
     usage: string;
     argc: number;
+    hasRegisterParam: boolean;
 }

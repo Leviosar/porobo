@@ -1,7 +1,7 @@
 import { ApiResponseDTO, SummonerV4DTO } from 'twisted/dist/models-dto';
 import { Constants, LolApi } from 'twisted'
 
-import BaseCommand from '../models/BaseCommand';
+import BaseCommand from './base';
 import { Message } from "discord.js";
 
 const summoner: BaseCommand = {
@@ -25,6 +25,7 @@ const summoner: BaseCommand = {
     help: 'Shows summoner',
     usage: '!summoner username',
     argc: 1,
+    hasRegisterParam: false
 }
 
 export default summoner

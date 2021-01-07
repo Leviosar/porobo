@@ -1,7 +1,7 @@
 import { ApiResponseDTO, SummonerLeagueDto, SummonerV4DTO } from 'twisted/dist/models-dto';
 import { Constants, LolApi } from 'twisted'
 
-import BaseCommand from '../models/BaseCommand';
+import BaseCommand from './base';
 import { Message } from "discord.js";
 
 const elo: BaseCommand = {
@@ -28,6 +28,7 @@ const elo: BaseCommand = {
     help: 'Shows summoner\'s elo',
     usage: '!elo username',
     argc: 1,
+    hasRegisterParam: true
 }
 
 export default elo
